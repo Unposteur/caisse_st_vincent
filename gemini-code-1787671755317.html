@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob:;">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mini Caisse Enregistreuse & Archives</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- SDK Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+      color: #333;
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .btn-top-icon {
+      background: #ffffff;
+      color: #333;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      width: 50px;
+      height: 50px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: background-color 0.2s;
+    }
+
+    .btn-top-icon:hover { background-color: #e5e5e5; }
+
+    .view-container {
+      width: 100%;
+      max-width: 1600px;
+      height: calc(100vh - 20px);
+    }
+
+    .view {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .view.active {
+      display: grid;
+      gap: 15px;
+    }
+
+    #mainView {
+      grid-template-columns: 2fr 1fr;
+    }
+
+    @media (max-width: 900px) { #mainView { grid-template-columns: 1.3fr 1fr; } }
+    @media (max-width: 600px) {
+      #mainView { grid-template-columns: 1fr; height: auto; }
+      body { overflow: auto; height: auto; }
+      .view-container { height: auto; }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .products-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 12px;
+      overflow-y: auto;
+      padding-right: 5px;
+      align-content: flex-start;
+      flex-grow: 1;
+    }
+
+    .product-card {
+      border: 2px solid #dcdcdc;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      background: #fff;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+
+    .product-card:active { transform: scale(0.96); }
+
+    .product-img, .image-placeholder {
+      width: 100%;
+      height: 75px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      object-fit: contain;
+      background-color: #fff;
+    }
+
+    .image-placeholder {
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 0.8rem;
+      background-color: #fafafa;
+    }
+
+    .product-info {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      color: #444;
+      gap: 2px;
+    }
+
+    .product-name {
+      font-size: 1.25rem;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .product-price {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #666;
+    }
+
+    .cart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .cart-card {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 10px;
+      overflow-y: auto;
+      padding-right: 5px;
+      flex-grow: 1;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .qty-val {
+      font-weight: bold;
+      min-width: 25px;
+      text-align: right;
+      font-size: 1.1rem;
+      color: #2c3e50;
+    }
+
+    .btn-remove-item {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 1.3rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .btn-remove-item:hover { background-color: #fceae8; }
+    .btn-remove-item:active { transform: scale(0.9); }
+
+    .cart-total-bar {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 2px solid #eee;
+      text-align: right;
+      font-weight: bold;
+      font-size: 1.8rem;
+    }
+
+    .big-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      height: 90px;
+      flex-shrink: 0;
+    }
+
+    .btn-big-validate, .btn-big-delete {
+      height: 100%;
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: opacity 0.2s;
+    }
+
+    .btn-big-validate { background-color: #2ecc71; }
+    .btn-big-delete { background-color: #e74c3c; }
+
+    #securedView { grid-template-columns: 1fr 1.5fr; }
+
+    @media (max-width: 768px) { #securedView { grid-template-columns: 1fr; overflow-y: auto; } }
+
+    .summary-card-sec {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .summary-text-block {
+      font-size: 1.5rem;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .secured-buttons-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-sec-action {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.25rem;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: opacity 0.2s;
+    }
+
+    .btn-sec-action:active { opacity: 0.85; }
+
+    .btn-purple { background-color: #8a44ad; }
+    .btn-darkblue { background-color: #34495e; }
+    .btn-green { background-color: #2ecc71; }
+    .btn-blue { background-color: #0056b3; }
+    .btn-orange { background-color: #e67e22; }
+
+    .search-product-box { margin-bottom: 10px; }
+    .search-product-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1.1rem;
+    }
+
+    .add-product-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px dashed #ddd;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .add-product-form input[type="text"],
+    .add-product-form input[type="number"] {
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1.1rem;
+    }
+
+    .add-product-form input[type="text"] { flex: 2; min-width: 130px; }
+    .add-product-form input[type="number"] { flex: 1; min-width: 70px; }
+    .add-product-form input[type="file"] { font-size: 0.9rem; max-width: 180px; }
+
+    .btn-add {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    #accordionProductsList {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 5px;
+      flex-grow: 1;
+    }
+
+    .product-select-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .product-select-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .product-select-item label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .product-select-item input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .modal-card {
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 380px;
+    }
+
+    .modal-card h3 { margin-bottom: 12px; font-size: 1.5rem; }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px;
+      margin: 12px 0 5px 0;
+      font-size: 1.4rem;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      text-align: center;
+      letter-spacing: 4px;
+    }
+
+    .modal-error {
+      color: #e74c3c;
+      font-weight: bold;
+      margin-bottom: 12px;
+      height: 18px;
+      visibility: hidden;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .btn-modal {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+    }
+
+    .btn-modal-cancel { background-color: #95a5a6; }
+    .btn-modal-ok { background-color: #2ecc71; }
+
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-num {
+      background-color: #f8f9fa;
+      border: 1px solid #dcdcdc;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      padding: 12px 0;
+      color: #333;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .btn-num:active { background-color: #e2e6ea; transform: scale(0.97); }
+
+    .btn-num-clear {
+      background-color: #fceae8;
+      color: #e74c3c;
+      border-color: #f5c6cb;
+    }
+
+    /* Styles de l'explorateur d'archives */
+    .archive-explorer-root {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      background: #f8fafc;
+      color: #1e293b;
+      overflow: hidden;
+      border-radius: 14px;
+      text-align: left;
+    }
+
+    .archive-sidebar {
+      width: 280px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    .archive-sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+    }
+
+    .archive-sidebar-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .archive-sidebar-content {
+      padding: 15px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .archive-year-group { margin-bottom: 16px; }
+
+    .archive-year-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .archive-folder-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #1e293b;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+      margin-left: 10px;
+    }
+
+    .archive-folder-item:hover {
+      background: #f1f5f9;
+      color: #4f46e5;
+    }
+
+    .archive-folder-item.active {
+      background: #eef2ff;
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .archive-main-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .archive-top-bar {
+      padding: 16px 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .archive-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .archive-btn-back {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+    .archive-btn-back:hover { background: #e2e8f0; }
+
+    .archive-breadcrumb {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .archive-main-pane {
+      flex-grow: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 16px;
+      align-content: flex-start;
+    }
+
+    .archive-file-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .archive-file-card:hover {
+      transform: translateY(-4px);
+      border-color: #4f46e5;
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.1);
+    }
+
+    .archive-file-icon-wrapper {
+      width: 45px;
+      height: 45px;
+      background: #fee2e2;
+      color: #ef4444;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .archive-file-name {
+      font-size: 0.85rem;
+      word-break: break-word;
+      color: #1e293b;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .archive-file-meta {
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+
+    .archive-empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 50px;
+      color: #64748b;
+      font-size: 1rem;
+    }
+
+    #printArea { display: none; }
+
+    @media print {
+      body * { visibility: hidden; }
+      .top-nav, .modal-overlay { display: none !important; }
+      #printArea, #printArea * { visibility: visible; display: block !important; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-nav">
+    <button class="btn-top-icon" id="btnToggleView" title="Vue sécurisée">🏠</button>
+    <button class="btn-top-icon" id="btnFullscreen" title="Plein écran">⤢</button>
+  </div>
+
+  <div class="view-container">
+
+    <!-- VUE 1 : PRINCIPALE -->
+    <div class="view active" id="mainView">
+      <div class="card">
+        <div class="section-title">Produits :</div>
+        <div class="products-list" id="productsList"></div>
+      </div>
+
+      <div class="cart-wrapper">
+        <div class="card cart-card">
+          <div class="section-title">Panier :</div>
+          <div class="cart-items" id="cartItems"></div>
+          
+          <div class="cart-total-bar">
+            Total : <span id="cartTotal">0.00</span> €
+          </div>
+        </div>
+
+        <div class="big-actions">
+          <button class="btn-big-validate" id="btnValidateCart" title="Valider">✓</button>
+          <button class="btn-big-delete" id="btnClearCart" title="Vider le panier complet">🗑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VUE 2 : SÉCURISÉE -->
+    <div class="view" id="securedView">
+      <div class="card summary-card-sec">
+        <div class="summary-text-block">
+          Total Consommation : <span id="basketsCount">0</span><br>
+          Chiffre affaire Global : <span id="dayTotal">0.00</span> €
+        </div>
+
+        <div class="secured-buttons-stack">
+          <button class="btn-sec-action btn-purple" id="btnAllRecaps">Tout Les recaps</button>
+          
+          <!-- Zone dynamique des boutons PDF -->
+          <div id="pdfDaysContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+
+          <button class="btn-sec-action btn-green" id="btnRecapToday">Recap Aujourd’hui</button>
+          <button class="btn-sec-action btn-blue" id="btnPrintAll">Imprimer Tout</button>
+          <button class="btn-sec-action btn-orange" id="btnResetDay">Réinitialiser</button>
+        </div>
+      </div>
+
+      <!-- Section "Tout" -->
+      <div class="card">
+        <div class="section-title" id="toutHeader" style="cursor: pointer;">
+          <span>Tout :</span>
+          <span id="toutArrow">▲</span>
+        </div>
+        
+        <div id="toutBody" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
+          <div class="search-product-box">
+            <input type="text" id="searchProductInput" placeholder="🔍 Rechercher un article...">
+          </div>
+          
+          <div class="add-product-form">
+            <input type="text" id="newProdName" placeholder="Nom de l'article">
+            <input type="number" id="newProdPrice" step="0.5" placeholder="Prix (€)">
+            <input type="file" id="newProdImg" accept="image/*">
+            <button class="btn-add" id="btnAddProduct">+ Ajouter</button>
+          </div>
+
+          <div id="accordionProductsList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODALE ARCHIVES EXPLORER -->
+  <div class="modal-overlay" id="archiveModal">
+    <div style="width: 92vw; height: 88vh; max-width: 1400px; background: #fff; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.3); position: relative;">
+      
+      <button id="btnCloseArchive" style="position: absolute; top: 12px; right: 15px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; font-weight: bold; cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center;" title="Fermer">✕</button>
+
+      <div class="archive-explorer-root">
+        <div class="archive-sidebar">
+          <div class="archive-sidebar-header" onclick="resetArchiveView()">
+            <h3>📊 Archives Caisse</h3>
+          </div>
+          <div class="archive-sidebar-content" id="archiveFolderTree">
+            <p style="color: #64748b; font-size: 0.9rem;">Chargement des dossiers...</p>
+          </div>
+        </div>
+
+        <div class="archive-main-container">
+          <div class="archive-top-bar">
+            <div class="archive-nav-left">
+              <button class="archive-btn-back" id="archiveBtnBack" onclick="resetArchiveView()">⬅️ Retour</button>
+              <div class="archive-breadcrumb" id="archiveBreadcrumbTitle">Sélectionnez un mois</div>
+            </div>
+          </div>
+          <div class="archive-main-pane" id="archiveMainPane">
+            <div class="archive-empty-state">Cliquez sur un dossier dans le panneau de gauche pour consulter les rapports PDF.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTRES MODALES -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal-card">
+      <h3>Accès Sécurisé</h3>
+      <p>Code secret :</p>
+      <input type="password" id="modalPasswordInput" class="modal-input" placeholder="****" readonly>
+      <div class="modal-error" id="modalError">Code incorrect.</div>
+      
+      <div class="numpad">
+        <button class="btn-num" data-val="1">1</button>
+        <button class="btn-num" data-val="2">2</button>
+        <button class="btn-num" data-val="3">3</button>
+        <button class="btn-num" data-val="4">4</button>
+        <button class="btn-num" data-val="5">5</button>
+        <button class="btn-num" data-val="6">6</button>
+        <button class="btn-num" data-val="7">7</button>
+        <button class="btn-num" data-val="8">8</button>
+        <button class="btn-num" data-val="9">9</button>
+        <button class="btn-num btn-num-clear" id="btnNumpadClear">C</button>
+        <button class="btn-num" data-val="0">0</button>
+        <button class="btn-num btn-num-clear" id="btnNumpadBackspace">⌫</button>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-cancel" id="btnModalCancel">Annuler</button>
+        <button class="btn-modal btn-modal-ok" id="btnModalOk">Valider</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="beerModal">
+    <div class="modal-card">
+      <h3>Choix de la Bière</h3>
+      <div class="modal-buttons" style="flex-direction: column; gap: 10px; margin-top: 15px;">
+        <button class="btn-modal btn-modal-ok" id="btnBeerNormal" style="background-color: #3498db; padding: 14px; font-size: 1.2rem;">Normale (2.00 €)</button>
+        <button class="btn-modal btn-modal-ok" id="btnBeerZero" style="background-color: #2ecc71; padding: 14px; font-size: 1.2rem;">0% (2.00 €)</button>
+      </div>
+      <div class="modal-buttons" style="margin-top: 12px;">
+        <button class="btn-modal btn-modal-cancel" id="btnBeerCancel" style="width: 100%;">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="recapModal">
+    <div class="modal-card" style="max-width: 650px; text-align: left; max-height: 85vh; display: flex; flex-direction: column;">
+      <h3 id="recapModalTitle" style="text-align: center; margin-bottom: 12px;">Récapitulatif</h3>
+      <div id="recapModalContent" style="overflow-y: auto; flex-grow: 1; margin-bottom: 15px; font-size: 1rem; line-height: 1.4; padding: 12px; background: #f9f9f9; border-radius: 8px;"></div>
+      <div class="modal-buttons" style="margin-top: 0;">
+        <button class="btn-modal btn-modal-cancel" id="btnRecapClose" style="flex: 1; background-color: #34495e;">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="alertModal">
+    <div class="modal-card">
+      <h3>Information</h3>
+      <p id="alertModalMessage" style="margin: 15px 0; font-size: 1.1rem;"></p>
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-ok" id="btnAlertOk" style="flex: 1;">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-card">
+      <h3>Confirmation</h3>
+      <p id="confirmModalMessage" style="margin: 15px 0; font-size: 1.1rem;"></p>
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-cancel" id="btnConfirmCancel">Annuler</button>
+        <button class="btn-modal btn-modal-ok" id="btnConfirmOk" style="background-color: #e74c3c;">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea"></div>
+
+  <script>
+    // Configuration de Supabase
+    const SUPABASE_URL = "https://zqvxuzbdvdozgrhoflhu.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_J4R5KRobHPPLaZiKn66hVw_vkV5pLx1";
+    const SUPABASE_BUCKET = "pdf-recaps"; 
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'click') {
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      } else if (type === 'confirm') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      }
+    }
+
+    function triggerFlash(color) {
+      const flash = document.createElement("div");
+      flash.style.position = "fixed";
+      flash.style.top = "0";
+      flash.style.left = "0";
+      flash.style.width = "100%";
+      flash.style.height = "100%";
+      flash.style.pointerEvents = "none";
+      flash.style.zIndex = "99999";
+      flash.style.transition = "opacity 0.4s ease-out";
+      
+      if (color === 'green') {
+        flash.style.backgroundColor = "rgba(46, 204, 113, 0.4)";
+      } else if (color === 'red') {
+        flash.style.backgroundColor = "rgba(231, 76, 60, 0.4)";
+      }
+      
+      document.body.appendChild(flash);
+      void flash.offsetWidth;
+      
+      setTimeout(() => {
+        flash.style.opacity = "0";
+        setTimeout(() => flash.remove(), 400);
+      }, 100);
+    }
+
+    const defaultProducts = [
+      { id: 18, name: "Schweppes", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/swepps.png" },
+      { id: 15, name: "Orangina", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/orangina.png" },
+      { id: 11, name: "1/2 Rouge", price: 2.50, active: true, image: "https://cerclestvincent.neocities.org/rouge.png" },
+      { id: 10, name: "1/2 Blanc", price: 2.50, active: true, image: "https://cerclestvincent.neocities.org/blanc.png" },
+      { id: 12, name: "1/2 Rosé", price: 2.50, active: true, image: "https://cerclestvincent.neocities.org/rose.png" },
+      { id: 14, name: "Lipton", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/lipton.png" },
+      { id: 7, name: "Oasis", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/oasis.png" },
+      { id: 5, name: "Rouge", price: 5.00, active: true, image: "https://cerclestvincent.neocities.org/rouge.png" },
+      { id: 4, name: "Blanc", price: 5.00, active: true, image: "https://cerclestvincent.neocities.org/blanc.png" },
+      { id: 6, name: "Rosé", price: 5.00, active: true, image: "https://cerclestvincent.neocities.org/rose.png" },
+      { id: 19, name: "Gâteau", price: 1.00, active: true, image: "https://previews.123rf.com/images/inganielsen/inganielsen1204/inganielsen120400005/13211279-marble-cake-on-a-white-background.jpg" },
+      { id: 16, name: "Perrier", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/perrier.png" },
+      { id: 17, name: "Coca", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/coca.png" },
+      { id: 9, name: "Bière", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/biere.png" },
+      { id: 8, name: "Apéro", price: 1.50, active: true, image: "https://cerclestvincent.neocities.org/apero.png" },
+      { id: 13, name: "Eau", price: 0.50, active: true, image: "https://cerclestvincent.neocities.org/eau.png" },
+      { id: 20, name: "Café", price: 1.00, active: true, image: "https://cerclestvincent.neocities.org/cafe.png" },
+      { id: 1, name: "Crémant Rosé", price: 10.00, active: true, image: "https://cerclestvincent.neocities.org/cremrose.png" },
+      { id: 2, name: "Crémant Blanc", price: 10.00, active: true, image: "https://cerclestvincent.neocities.org/cremblanc.png" },
+      { id: 3, name: "Crémant Rouge", price: 10.00, active: true, image: "https://cerclestvincent.neocities.org/cremrouge.png" }
+    ];
+
+    let products = [];
+    let currentCart = [];
+    let basketsCount = 0;
+    let dayTotal = 0;
+    let history = [];
+    let isSecuredView = false;
+    let confirmCallback = null;
+    let archiveGlobalTree = {};
+
+    const mainView = document.getElementById("mainView");
+    const securedView = document.getElementById("securedView");
+    const btnToggleView = document.getElementById("btnToggleView");
+    const btnFullscreen = document.getElementById("btnFullscreen");
+
+    const productsList = document.getElementById("productsList");
+    const cartItems = document.getElementById("cartItems");
+    const cartTotal = document.getElementById("cartTotal");
+    const btnClearCart = document.getElementById("btnClearCart");
+    const btnValidateCart = document.getElementById("btnValidateCart");
+
+    const basketsCountEl = document.getElementById("basketsCount");
+    const dayTotalEl = document.getElementById("dayTotal");
+
+    const btnAllRecaps = document.getElementById("btnAllRecaps");
+    const pdfDaysContainer = document.getElementById("pdfDaysContainer");
+    const btnRecapToday = document.getElementById("btnRecapToday");
+    const btnPrintAll = document.getElementById("btnPrintAll");
+    const btnResetDay = document.getElementById("btnResetDay");
+
+    const accordionProductsList = document.getElementById("accordionProductsList");
+    const btnAddProduct = document.getElementById("btnAddProduct");
+    const newProdName = document.getElementById("newProdName");
+    const newProdPrice = document.getElementById("newProdPrice");
+    const newProdImg = document.getElementById("newProdImg");
+    const searchProductInput = document.getElementById("searchProductInput");
+    const toutHeader = document.getElementById("toutHeader");
+    const toutBody = document.getElementById("toutBody");
+    const toutArrow = document.getElementById("toutArrow");
+
+    const passwordModal = document.getElementById("passwordModal");
+    const modalPasswordInput = document.getElementById("modalPasswordInput");
+    const modalError = document.getElementById("modalError");
+    const btnModalOk = document.getElementById("btnModalOk");
+    const btnModalCancel = document.getElementById("btnModalCancel");
+
+    const beerModal = document.getElementById("beerModal");
+    const btnBeerNormal = document.getElementById("btnBeerNormal");
+    const btnBeerZero = document.getElementById("btnBeerZero");
+    const btnBeerCancel = document.getElementById("btnBeerCancel");
+
+    const recapModal = document.getElementById("recapModal");
+    const recapModalTitle = document.getElementById("recapModalTitle");
+    const recapModalContent = document.getElementById("recapModalContent");
+    const btnRecapClose = document.getElementById("btnRecapClose");
+
+    const alertModal = document.getElementById("alertModal");
+    const alertModalMessage = document.getElementById("alertModalMessage");
+    const btnAlertOk = document.getElementById("btnAlertOk");
+
+    const confirmModal = document.getElementById("confirmModal");
+    const confirmModalMessage = document.getElementById("confirmModalMessage");
+    const btnConfirmOk = document.getElementById("btnConfirmOk");
+    const btnConfirmCancel = document.getElementById("btnConfirmCancel");
+
+    const archiveModal = document.getElementById("archiveModal");
+    const btnCloseArchive = document.getElementById("btnCloseArchive");
+
+    function showAlert(msg) {
+      alertModalMessage.textContent = msg;
+      alertModal.style.display = "flex";
+    }
+
+    function showConfirm(msg, callback) {
+      confirmModalMessage.textContent = msg;
+      confirmCallback = callback;
+      confirmModal.style.display = "flex";
+    }
+
+    async function init() {
+      loadData();
+      await checkMidnightReset(); 
+      renderAll();
+      setupEventListeners();
+
+      setInterval(async () => {
+        await checkMidnightReset();
+      }, 60000);
+    }
+
+    function loadData() {
+      const savedProducts = localStorage.getItem("caisse_products_v2");
+      products = savedProducts ? JSON.parse(savedProducts) : defaultProducts;
+      basketsCount = parseInt(localStorage.getItem("caisse_basketsCount")) || 0;
+      dayTotal = parseFloat(localStorage.getItem("caisse_dayTotal")) || 0;
+      history = JSON.parse(localStorage.getItem("caisse_history")) || [];
+
+      basketsCountEl.textContent = basketsCount;
+      dayTotalEl.textContent = dayTotal.toFixed(2);
+    }
+
+    function saveData() {
+      localStorage.setItem("caisse_products_v2", JSON.stringify(products));
+      localStorage.setItem("caisse_basketsCount", basketsCount.toString());
+      localStorage.setItem("caisse_dayTotal", dayTotal.toString());
+      localStorage.setItem("caisse_history", JSON.stringify(history));
+      localStorage.setItem("caisse_current_date", new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+    }
+
+    async function checkMidnightReset() {
+      const savedDate = localStorage.getItem("caisse_current_date");
+      const currentDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+      if (savedDate && savedDate !== currentDate) {
+        if (history.length > 0) {
+          const days = getHistoryByDay();
+          for (const dayData of days) {
+            if (dayData.date === savedDate) {
+              await generateAndUploadPdfForDay(dayData);
+            }
+          }
+        }
+
+        basketsCount = 0;
+        dayTotal = 0;
+        history = [];
+        
+        localStorage.setItem("caisse_current_date", currentDate);
+        saveData();
+        renderAll();
+      } else if (!savedDate) {
+        localStorage.setItem("caisse_current_date", currentDate);
+      }
+    }
+
+    // Génération et envoi automatique du PDF à minuit avec un nom simple (ex: recap_mardi_8_aout_2026.pdf)
+    async function generateAndUploadPdfForDay(dayData) {
+      const container = document.createElement("div");
+      container.style.padding = "25px";
+      container.style.fontFamily = "Arial, sans-serif";
+
+      let content = `<h1 style="text-align:center; margin-bottom:15px; color:#2c3e50;">Rapport de Caisse</h1>`;
+      content += `<h2 style="text-align:center; color:#7f8c8d; margin-bottom:25px;">${dayData.date}</h2>`;
+      content += `<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px; font-size:1.1rem;">`;
+      content += `<p><strong>Ventes totales :</strong> ${dayData.basketsCount}</p>`;
+      content += `<p><strong>Chiffre d'affaires :</strong> ${dayData.total.toFixed(2)} €</p>`;
+      content += `</div>`;
+
+      content += `<h3 style="border-bottom:2px solid #34495e; padding-bottom:5px; margin-bottom:15px;">Détail des Articles Vendus :</h3>`;
+      content += `<table style="width:100%; border-collapse:collapse; margin-bottom:25px;">`;
+      content += `<tr style="background:#34495e; color:white;"><th style="padding:8px; text-align:left;">Article</th><th style="padding:8px; text-align:center;">Quantité</th><th style="padding:8px; text-align:right;">Total</th></tr>`;
+
+      const itemCounts = {};
+      dayData.baskets.forEach(b => {
+        b.items.forEach(i => {
+          if (!itemCounts[i.name]) itemCounts[i.name] = { qty: 0, total: 0 };
+          itemCounts[i.name].qty += i.qty;
+          itemCounts[i.name].total += i.price * i.qty;
+        });
+      });
+
+      for (const [name, data] of Object.entries(itemCounts)) {
+        content += `<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">${name}</td><td style="padding:8px; text-align:center;">${data.qty}</td><td style="padding:8px; text-align:right;">${data.total.toFixed(2)} €</td></tr>`;
+      }
+      content += `</table>`;
+      container.innerHTML = content;
+
+      const opt = {
+        margin: 10,
+        filename: `recap-${dayData.date.replace(/ /g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+        
+        // Nom simple et propre : recap_mardi_8_aout_2026.pdf
+        const safeDate = dayData.date
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^a-zA-Z0-9]/g, "_")
+          .replace(/_+/g, "_");
+        const fileName = `recap_${safeDate}.pdf`;
+
+        await supabaseClient.storage.from(SUPABASE_BUCKET).upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+        console.log("PDF automatique envoyé à minuit :", fileName);
+      } catch (err) {
+        console.error("Erreur lors de l'envoi automatique du PDF à minuit :", err.message);
+      }
+    }
+
+    function renderAll() {
+      renderActiveProducts();
+      renderCart();
+      renderManagementList();
+      renderPdfDaysButtons();
+    }
+
+    function setupEventListeners() {
+      toutHeader.addEventListener("click", () => {
+        playSound('click');
+        if (toutBody.style.display === "none") {
+          toutBody.style.display = "flex";
+          toutArrow.textContent = "▼";
+        } else {
+          toutBody.style.display = "none";
+          toutArrow.textContent = "▲";
+        }
+      });
+
+      searchProductInput.addEventListener("input", renderManagementList);
+
+      btnToggleView.addEventListener("click", () => {
+        playSound('click');
+        if (!isSecuredView) {
+          passwordModal.style.display = "flex";
+          modalPasswordInput.value = "";
+          modalError.style.visibility = "hidden";
+        } else {
+          isSecuredView = false;
+          securedView.classList.remove("active");
+          mainView.classList.add("active");
+          btnToggleView.textContent = "🏠";
+        }
+      });
+
+      document.querySelectorAll(".btn-num[data-val]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          playSound('click');
+          if (modalPasswordInput.value.length < 10) {
+            modalPasswordInput.value += btn.getAttribute("data-val");
+            modalError.style.visibility = "hidden";
+          }
+        });
+      });
+
+      document.getElementById("btnNumpadClear").addEventListener("click", () => {
+        playSound('click');
+        modalPasswordInput.value = "";
+      });
+
+      document.getElementById("btnNumpadBackspace").addEventListener("click", () => {
+        playSound('click');
+        modalPasswordInput.value = modalPasswordInput.value.slice(0, -1);
+      });
+
+      btnModalOk.addEventListener("click", verifyPassword);
+      btnModalCancel.addEventListener("click", () => {
+        playSound('click');
+        passwordModal.style.display = "none";
+      });
+
+      btnBeerCancel.addEventListener("click", () => {
+        playSound('click');
+        beerModal.style.display = "none";
+      });
+
+      btnBeerNormal.addEventListener("click", () => {
+        beerModal.style.display = "none";
+        addBeerToCart("Bière Normale", 2.00);
+      });
+
+      btnBeerZero.addEventListener("click", () => {
+        beerModal.style.display = "none";
+        addBeerToCart("Bière 0%", 2.00);
+      });
+
+      btnAlertOk.addEventListener("click", () => {
+        playSound('click');
+        alertModal.style.display = "none";
+      });
+
+      btnRecapClose.addEventListener("click", () => {
+        playSound('click');
+        recapModal.style.display = "none";
+      });
+
+      btnConfirmCancel.addEventListener("click", () => {
+        playSound('click');
+        confirmModal.style.display = "none";
+        confirmCallback = null;
+      });
+
+      btnConfirmOk.addEventListener("click", () => {
+        confirmModal.style.display = "none";
+        if (confirmCallback) confirmCallback();
+      });
+
+      btnCloseArchive.addEventListener("click", () => {
+        playSound('click');
+        archiveModal.style.display = "none";
+      });
+
+      btnFullscreen.addEventListener("click", () => {
+        playSound('click');
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
+        btnFullscreen.style.display = "none";
+      });
+
+      btnClearCart.addEventListener("click", () => {
+        if (currentCart.length > 0) {
+          playSound('error');
+          triggerFlash('red');
+          currentCart = [];
+          renderCart();
+        }
+      });
+
+      btnValidateCart.addEventListener("click", () => {
+        if (currentCart.length === 0) return;
+        
+        playSound('confirm');
+        triggerFlash('green');
+        
+        const total = currentCart.reduce((sum, item) => sum + item.price * item.qty, 0);
+        dayTotal += total;
+        basketsCount += 1;
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        history.push({
+          id: basketsCount,
+          date: dateStr,
+          time: timeStr,
+          items: JSON.parse(JSON.stringify(currentCart)),
+          total: total
+        });
+
+        basketsCountEl.textContent = basketsCount;
+        dayTotalEl.textContent = dayTotal.toFixed(2);
+
+        saveData();
+        currentCart = [];
+        renderCart();
+        renderPdfDaysButtons();
+      });
+
+      btnAddProduct.addEventListener("click", addNewProduct);
+      btnResetDay.addEventListener("click", resetDay);
+      
+      btnAllRecaps.addEventListener("click", () => { 
+        playSound('click'); 
+        archiveModal.style.display = "flex";
+        loadArchiveExplorer();
+      });
+
+      btnRecapToday.addEventListener("click", () => { playSound('click'); showTodayOrders(); });
+      btnPrintAll.addEventListener("click", () => { playSound('click'); printRecap(); });
+    }
+
+    function verifyPassword() {
+      playSound('click');
+      if (modalPasswordInput.value === "9234") {
+        isSecuredView = true;
+        passwordModal.style.display = "none";
+        mainView.classList.remove("active");
+        securedView.classList.add("active");
+        btnToggleView.textContent = "🡠";
+        renderPdfDaysButtons();
+      } else {
+        modalError.style.visibility = "visible";
+        modalPasswordInput.value = "";
+      }
+    }
+
+    function addBeerToCart(name, price) {
+      playSound('click');
+      const existing = currentCart.find(item => item.name === name);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        currentCart.push({ id: name === "Bière Normale" ? 901 : 902, name, price, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function removeCartItem(id) {
+      playSound('error');
+      triggerFlash('red');
+      currentCart = currentCart.filter(i => i.id !== id);
+      renderCart();
+    }
+
+    function renderActiveProducts() {
+      productsList.innerHTML = "";
+      products.filter(p => p.active).forEach(product => {
+        const card = document.createElement("div");
+        card.className = "product-card";
+        const imgHtml = product.image 
+          ? `<img src="${product.image}" alt="${product.name}" class="product-img">`
+          : `<div class="image-placeholder">(Image)</div>`;
+
+        card.innerHTML = `
+          ${imgHtml}
+          <div class="product-info">
+            <span class="product-name">${product.name}</span>
+            <span class="product-price">${product.price.toFixed(2)}€</span>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          if (product.name.toLowerCase().includes("bière") || product.name.toLowerCase().includes("biere")) {
+            beerModal.style.display = "flex";
+          } else {
+            playSound('click');
+            const existing = currentCart.find(item => item.id === product.id);
+            if (existing) existing.qty += 1;
+            else currentCart.push({ ...product, qty: 1 });
+            renderCart();
+          }
+        });
+        productsList.appendChild(card);
+      });
+    }
+
+    function renderCart() {
+      cartItems.innerHTML = "";
+      let total = 0;
+
+      currentCart.forEach(item => {
+        const itemTotal = item.price * item.qty;
+        total += itemTotal;
+
+        const row = document.createElement("div");
+        row.className = "cart-item";
+        row.innerHTML = `
+          <div>
+            <strong>${item.name}</strong><br>
+            <span style="font-size: 0.9rem; color: #666;">${itemTotal.toFixed(2)} €</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <span class="qty-val">x${item.qty}</span>
+            <button class="btn-remove-item" onclick="removeCartItem(${item.id})">✕</button>
+          </div>
+        `;
+        cartItems.appendChild(row);
+      });
+
+      cartTotal.textContent = total.toFixed(2);
+    }
+
+    function removeOrderItem(ticketId, itemIdx) {
+      const ticket = history.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      ticket.items.splice(itemIdx, 1);
+      playSound('error');
+      triggerFlash('red');
+
+      if (ticket.items.length === 0) {
+        history = history.filter(t => t.id !== ticketId);
+      } else {
+        ticket.total = ticket.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      }
+      
+      recalculateDayTotal();
+      saveData();
+      showTodayOrders();
+      renderPdfDaysButtons();
+    }
+
+    function recalculateDayTotal() {
+      dayTotal = history.reduce((sum, t) => sum + t.total, 0);
+      basketsCount = history.length;
+      basketsCountEl.textContent = basketsCount;
+      dayTotalEl.textContent = dayTotal.toFixed(2);
+    }
+
+    function deleteTicket(ticketId) {
+      showConfirm("Annuler la commande #" + ticketId + " ?", () => {
+        playSound('error');
+        triggerFlash('red');
+        history = history.filter(t => t.id !== ticketId);
+        recalculateDayTotal();
+        saveData();
+        showTodayOrders();
+        renderPdfDaysButtons();
+      });
+    }
+
+    function getHistoryByDay() {
+      const daysMap = {};
+      history.forEach(b => {
+        const dayKey = b.date || "Inconnue";
+        if (!daysMap[dayKey]) {
+          daysMap[dayKey] = { date: dayKey, baskets: [], total: 0, basketsCount: 0 };
+        }
+        daysMap[dayKey].baskets.push(b);
+        daysMap[dayKey].total += b.total;
+        daysMap[dayKey].basketsCount += 1;
+      });
+      return Object.values(daysMap);
+    }
+
+    function renderPdfDaysButtons() {
+      pdfDaysContainer.innerHTML = "";
+      const days = getHistoryByDay();
+
+      if (days.length === 0) {
+        const defaultBtn = document.createElement("button");
+        defaultBtn.className = "btn-sec-action btn-darkblue";
+        defaultBtn.style.marginLeft = "20px";
+        defaultBtn.style.width = "calc(100% - 20px)";
+        defaultBtn.textContent = "• PDF - Aucun jour";
+        defaultBtn.onclick = () => { playSound('click'); showAlert("Aucune donnée enregistrée."); };
+        pdfDaysContainer.appendChild(defaultBtn);
+        return;
+      }
+
+      days.forEach(dayData => {
+        const btn = document.createElement("button");
+        btn.className = "btn-sec-action btn-darkblue";
+        btn.style.marginLeft = "20px";
+        btn.style.width = "calc(100% - 20px)";
+        btn.textContent = `• PDF - ${dayData.date}`;
+        btn.onclick = () => { playSound('click'); exportPdfDay(dayData); };
+        pdfDaysContainer.appendChild(btn);
+      });
+    }
+
+    function showTodayOrders() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const todayTickets = history.filter(h => h.date === dateStr);
+
+      recapModalTitle.textContent = "Recap Aujourd’hui";
+
+      if (todayTickets.length === 0) {
+        recapModalContent.innerHTML = `<p style="text-align: center; color: #777; padding: 20px;">Aucune commande enregistrée aujourd'hui.</p>`;
+      } else {
+        let html = `<p style="margin-bottom: 12px; font-size: 1.1rem;"><strong>Total du jour :</strong> ${todayTickets.reduce((sum, t) => sum + t.total, 0).toFixed(2)} € (${todayTickets.length} ventes)</p>`;
+
+        todayTickets.slice().reverse().forEach(ticket => {
+          html += `<div style="background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 10px;">`;
+          html += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 6px; align-items: center;">`;
+          html += `<strong>Commande #${ticket.id} (${ticket.time || 'Aujourd\'hui'})</strong>`;
+          html += `<div style="display: flex; align-items: center; gap: 10px;">`;
+          html += `<strong style="color: #2ecc71;">${ticket.total.toFixed(2)} €</strong>`;
+          html += `<button onclick="deleteTicket(${ticket.id})" style="background:#e74c3c; color:white; border:none; border-radius:4px; padding:2px 8px; cursor:pointer;" title="Annuler">🗑</button>`;
+          html += `</div></div>`;
+          
+          ticket.items.forEach((i, idx) => {
+            html += `<div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; margin-bottom: 4px;">`;
+            html += `<span>${i.name} (${(i.price * i.qty).toFixed(2)} €)</span>`;
+            html += `<div style="display: flex; align-items: center; gap: 12px;">`;
+            html += `<span class="qty-val">x${i.qty}</span>`;
+            html += `<button class="btn-remove-item" onclick="removeOrderItem(${ticket.id}, ${idx})">✕</button>`;
+            html += `</div></div>`;
+          });
+
+          html += `</div>`;
+        });
+
+        recapModalContent.innerHTML = html;
+      }
+
+      recapModal.style.display = "flex";
+    }
+
+    async function loadArchiveExplorer() {
+      const { data, error } = await supabaseClient.storage.from(SUPABASE_BUCKET).list();
+      const treeContainer = document.getElementById('archiveFolderTree');
+
+      if (error) {
+        treeContainer.innerHTML = `<p style="color: #ef4444; font-size: 0.9rem;">Erreur de chargement</p>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        treeContainer.innerHTML = `<p style="color: #64748b; font-size: 0.9rem;">Aucun fichier trouvé</p>`;
+        return;
+      }
+
+      data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      archiveGlobalTree = {};
+      data.forEach(file => {
+        const dateObj = new Date(file.created_at || Date.now());
+        const year = dateObj.getFullYear();
+        const month = dateObj.toLocaleString('fr-FR', { month: 'long' });
+
+        if (!archiveGlobalTree[year]) archiveGlobalTree[year] = {};
+        if (!archiveGlobalTree[year][month]) archiveGlobalTree[year][month] = [];
+        archiveGlobalTree[year][month].push(file);
+      });
+
+      renderArchiveSidebar();
+    }
+
+    function renderArchiveSidebar() {
+      const treeContainer = document.getElementById('archiveFolderTree');
+      treeContainer.innerHTML = '';
+
+      for (const [year, months] of Object.entries(archiveGlobalTree)) {
+        const yearGroup = document.createElement('div');
+        yearGroup.className = 'archive-year-group';
+        
+        const yearTitle = document.createElement('div');
+        yearTitle.className = 'archive-year-title';
+        yearTitle.innerHTML = `📁 ${year}`;
+        yearGroup.appendChild(yearTitle);
+
+        for (const [month, files] of Object.entries(months)) {
+          const capitalizedMonth = month.charAt(0).toUpperCase() + month.slice(1);
+          
+          const folderDiv = document.createElement('div');
+          folderDiv.className = 'archive-folder-item';
+          folderDiv.innerHTML = `📁 <span>${capitalizedMonth}</span>`;
+          
+          folderDiv.onclick = () => {
+            playSound('click');
+            document.querySelectorAll('.archive-folder-item').forEach(el => el.classList.remove('active'));
+            folderDiv.classList.add('active');
+            
+            renderArchiveFiles(files, `${year} / ${capitalizedMonth}`);
+          };
+
+          yearGroup.appendChild(folderDiv);
+        }
+        treeContainer.appendChild(yearGroup);
+      }
+    }
+
+    function renderArchiveFiles(files, pathTitle) {
+      document.getElementById('archiveBreadcrumbTitle').textContent = pathTitle;
+      document.getElementById('archiveBtnBack').style.display = 'flex';
+      const mainPane = document.getElementById('archiveMainPane');
+      mainPane.innerHTML = '';
+
+      files.forEach(file => {
+        const card = document.createElement('div');
+        card.className = 'archive-file-card';
+        
+        const dateFormatted = file.created_at ? new Date(file.created_at).toLocaleDateString('fr-FR') : '';
+
+        card.innerHTML = `
+          <div class="archive-file-icon-wrapper">PDF</div>
+          <div class="archive-file-name">${file.name}</div>
+          <div class="archive-file-meta">${dateFormatted}</div>
+        `;
+
+        card.onclick = async () => {
+          playSound('click');
+          const { data } = supabaseClient.storage.from(SUPABASE_BUCKET).getPublicUrl(file.name);
+          window.open(data.publicUrl, '_blank');
+        };
+
+        mainPane.appendChild(card);
+      });
+    }
+
+    function resetArchiveView() {
+      playSound('click');
+      document.querySelectorAll('.archive-folder-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('archiveBreadcrumbTitle').textContent = 'Sélectionnez un mois';
+      document.getElementById('archiveBtnBack').style.display = 'none';
+      
+      const mainPane = document.getElementById('archiveMainPane');
+      mainPane.innerHTML = `<div class="archive-empty-state">Cliquez sur un dossier dans le panneau de gauche pour consulter les rapports PDF.</div>`;
+    }
+
+    // Export manuel d'un PDF avec un nom simple (ex: recap_mardi_8_aout_2026.pdf)
+    async function exportPdfDay(dayData) {
+      const container = document.createElement("div");
+      container.style.padding = "25px";
+      container.style.fontFamily = "Arial, sans-serif";
+
+      let content = `<h1 style="text-align:center; margin-bottom:15px; color:#2c3e50;">Rapport de Caisse</h1>`;
+      content += `<h2 style="text-align:center; color:#7f8c8d; margin-bottom:25px;">${dayData.date}</h2>`;
+      content += `<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:20px; font-size:1.1rem;">`;
+      content += `<p><strong>Ventes totales :</strong> ${dayData.basketsCount}</p>`;
+      content += `<p><strong>Chiffre d'affaires :</strong> ${dayData.total.toFixed(2)} €</p>`;
+      content += `</div>`;
+
+      content += `<h3 style="border-bottom:2px solid #34495e; padding-bottom:5px; margin-bottom:15px;">Détail des Articles Vendus :</h3>`;
+      content += `<table style="width:100%; border-collapse:collapse; margin-bottom:25px;">`;
+      content += `<tr style="background:#34495e; color:white;"><th style="padding:8px; text-align:left;">Article</th><th style="padding:8px; text-align:center;">Quantité</th><th style="padding:8px; text-align:right;">Total</th></tr>`;
+
+      const itemCounts = {};
+      dayData.baskets.forEach(b => {
+        b.items.forEach(i => {
+          if (!itemCounts[i.name]) itemCounts[i.name] = { qty: 0, total: 0 };
+          itemCounts[i.name].qty += i.qty;
+          itemCounts[i.name].total += i.price * i.qty;
+        });
+      });
+
+      for (const [name, data] of Object.entries(itemCounts)) {
+        content += `<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">${name}</td><td style="padding:8px; text-align:center;">${data.qty}</td><td style="padding:8px; text-align:right;">${data.total.toFixed(2)} €</td></tr>`;
+      }
+      content += `</table>`;
+
+      container.innerHTML = content;
+
+      const opt = {
+        margin:       10,
+        filename:     `recap-${dayData.date.replace(/ /g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        showAlert("Génération et envoi du PDF sur Supabase...");
+        
+        const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+        
+        // Nettoyage et formatage simple du nom (ex: recap_mardi_8_aout_2026.pdf)
+        const safeDate = dayData.date
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^a-zA-Z0-9]/g, "_")
+          .replace(/_+/g, "_");
+
+        const fileName = `recap_${safeDate}.pdf`;
+
+        const { data, error } = await supabaseClient
+          .storage
+          .from(SUPABASE_BUCKET)
+          .upload(fileName, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (error) throw error;
+
+        playSound('confirm');
+        showAlert("PDF sauvegardé sur Supabase : " + fileName);
+      } catch (err) {
+        playSound('error');
+        showAlert("Erreur d'envoi du PDF : " + err.message);
+      }
+    }
+
+    function printRecap() {
+      if (history.length === 0) return showAlert("Aucune vente à imprimer.");
+      
+      const printContainer = document.getElementById("printArea");
+      let html = `<h2>Bilan Global Caisse</h2><p>Chiffre d'affaires : <strong>${dayTotal.toFixed(2)} €</strong> (${basketsCount} ventes)</p><hr>`;
+
+      const days = getHistoryByDay();
+      days.forEach(dayData => {
+        html += `<h3>${dayData.date} - Total : ${dayData.total.toFixed(2)} €</h3>`;
+        const itemCounts = {};
+        dayData.baskets.forEach(b => {
+          b.items.forEach(i => {
+            if (!itemCounts[i.name]) itemCounts[i.name] = { qty: 0, total: 0 };
+            itemCounts[i.name].qty += i.qty;
+            itemCounts[i.name].total += i.price * i.qty;
+          });
+        });
+        for (const [name, data] of Object.entries(itemCounts)) {
+          html += `<p style="margin-left: 15px;">${name} x${data.qty} : ${data.total.toFixed(2)} €</p>`;
+        }
+      });
+
+      printContainer.innerHTML = html;
+      window.print();
+    }
+
+    function renderManagementList() {
+      accordionProductsList.innerHTML = "";
+      const query = searchProductInput.value.toLowerCase().trim();
+      const filteredProducts = products.filter(product => product.name.toLowerCase().includes(query));
+
+      if (filteredProducts.length === 0) {
+        accordionProductsList.innerHTML = `<div style="text-align:center; color:#999; padding: 15px;">Aucun article trouvé</div>`;
+        return;
+      }
+
+      filteredProducts.forEach(product => {
+        const item = document.createElement("div");
+        item.className = "product-select-item";
+        item.innerHTML = `
+          <label>
+            <input type="checkbox" ${product.active ? "checked" : ""}>
+            ${product.name}
+          </label>
+          <div class="product-select-right">
+            <span>${product.price.toFixed(2)}€</span>
+            <button class="btn-remove-item">🗑</button>
+          </div>
+        `;
+        item.querySelector("input[type='checkbox']").addEventListener("change", (e) => {
+          playSound('click');
+          product.active = e.target.checked;
+          saveData();
+          renderActiveProducts();
+        });
+        item.querySelector(".btn-remove-item").addEventListener("click", () => {
+          showConfirm("Supprimer cet article ?", () => {
+            playSound('error');
+            triggerFlash('red');
+            products = products.filter(p => p.id !== product.id);
+            saveData();
+            renderAll();
+          });
+        });
+        accordionProductsList.appendChild(item);
+      });
+    }
+
+    function addNewProduct() {
+      const name = newProdName.value.trim();
+      const price = parseFloat(newProdPrice.value);
+      const file = newProdImg.files[0];
+
+      if (!name || isNaN(price) || price <= 0) {
+        showAlert("Nom et prix valides requis.");
+        return;
+      }
+
+      playSound('click');
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => saveNewProductObj(name, price, e.target.result);
+        reader.readAsDataURL(file);
+      } else {
+        saveNewProductObj(name, price, null);
+      }
+    }
+
+    function saveNewProductObj(name, price, imgData) {
+      products.push({ id: Date.now(), name, price, active: true, image: imgData });
+      newProdName.value = "";
+      newProdPrice.value = "";
+      newProdImg.value = "";
+      saveData();
+      renderAll();
+    }
+
+    function resetDay() {
+      showConfirm("Réinitialiser l'ensemble de la caisse ?", () => {
+        playSound('error');
+        triggerFlash('red');
+        basketsCount = 0;
+        dayTotal = 0;
+        history = [];
+        products = defaultProducts;
+        localStorage.removeItem("caisse_products_v2");
+        basketsCountEl.textContent = "0";
+        dayTotalEl.textContent = "0.00";
+        saveData();
+        renderAll();
+      });
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
