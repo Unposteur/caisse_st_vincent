@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <link rel="icon" type="image/png" href="https://testcerclestvincent.neocities.org/icon.png">
+<html lang="fr"><head>
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob:;">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mini Caisse Enregistreuse & Archives</title>
+  <title>Mini Caisse Enregistreuse &amp; Suivi d'achat</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- SDK Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -258,42 +256,47 @@
     .btn-big-validate { background-color: #2ecc71; }
     .btn-big-delete { background-color: #e74c3c; }
 
-    #securedView { grid-template-columns: 1fr 1.5fr; }
+    /* VUE SÉCURISÉE AVEC TABLEAU EXCEL STYLE */
+    #securedView {
+      grid-template-columns: 1fr 1.6fr;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
 
-    @media (max-width: 768px) { #securedView { grid-template-columns: 1fr; overflow-y: auto; } }
+    @media (max-width: 1024px) { #securedView { grid-template-columns: 1fr; overflow-y: auto; } }
 
     .summary-card-sec {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 15px;
       overflow-y: auto;
     }
 
     .summary-text-block {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: bold;
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
     .secured-buttons-stack {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .btn-sec-action {
       width: 100%;
-      padding: 16px;
+      padding: 12px;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       font-weight: bold;
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       transition: opacity 0.2s;
     }
@@ -306,83 +309,83 @@
     .btn-blue { background-color: #0056b3; }
     .btn-orange { background-color: #e67e22; }
 
-    .search-product-box { margin-bottom: 10px; }
-    .search-product-box input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1.1rem;
-    }
-
-    .add-product-form {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 2px dashed #ddd;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .add-product-form input[type="text"],
-    .add-product-form input[type="number"] {
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1.1rem;
-    }
-
-    .add-product-form input[type="text"] { flex: 2; min-width: 130px; }
-    .add-product-form input[type="number"] { flex: 1; min-width: 70px; }
-    .add-product-form input[type="file"] { font-size: 0.9rem; max-width: 180px; }
-
-    .btn-add {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 15px;
-      font-weight: bold;
-      font-size: 1.1rem;
-      cursor: pointer;
-    }
-
-    #accordionProductsList {
-      overflow-y: auto;
+    /* TABLEAU EXCEL STYLE "SUIVI D'ACHAT" */
+    .excel-table-container {
+      background: #ffffff;
+      border-radius: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding-right: 5px;
-      flex-grow: 1;
+      overflow: hidden;
+      border: 1px solid #dcdcdc;
+      height: 100%;
     }
 
-    .product-select-item {
+    .excel-table-header-title {
+      background-color: #008b8b;
+      color: white;
+      padding: 14px 18px;
+      font-size: 1.3rem;
+      font-weight: bold;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 1.1rem;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #f5f5f5;
     }
 
-    .product-select-right {
+    .excel-filter-bar {
+      padding: 10px 15px;
+      background: #f4f6f7;
+      border-bottom: 1px solid #dcdcdc;
       display: flex;
+      gap: 10px;
       align-items: center;
-      gap: 15px;
     }
 
-    .product-select-item label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
+    .excel-filter-input {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
     }
 
-    .product-select-item input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
-      cursor: pointer;
+    .excel-table-scroll {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .excel-table th {
+      background-color: #e0f2f1;
+      color: #004d40;
+      padding: 10px 12px;
+      font-weight: bold;
+      border-bottom: 2px solid #b2dfdb;
+      border-right: 1px solid #dcdcdc;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .excel-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      border-right: 1px solid #e0e0e0;
+      color: #333;
+    }
+
+    .excel-table tr:nth-child(even) {
+      background-color: #fafbfc;
+    }
+
+    .excel-table tr:hover {
+      background-color: #f1f8e9;
     }
 
     .modal-overlay {
@@ -710,7 +713,7 @@
       </div>
     </div>
 
-    <!-- VUE 2 : SÉCURISÉE -->
+    <!-- VUE 2 : SÉCURISÉE AVEC TABLEAU EXCEL STYLE -->
     <div class="view" id="securedView">
       <div class="card summary-card-sec">
         <div class="summary-text-block">
@@ -722,7 +725,7 @@
           <button class="btn-sec-action btn-purple" id="btnAllRecaps">Tout Les recaps</button>
           
           <!-- Zone dynamique des boutons PDF -->
-          <div id="pdfDaysContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+          <div id="pdfDaysContainer" style="display: flex; flex-direction: column; gap: 8px;"><button class="btn-sec-action btn-darkblue" style="margin-left: 10px; width: calc(100% - 10px);">• PDF - Aucun jour</button></div>
 
           <button class="btn-sec-action btn-green" id="btnRecapToday">Recap Aujourd’hui</button>
           <button class="btn-sec-action btn-blue" id="btnPrintAll">Imprimer Tout</button>
@@ -730,26 +733,28 @@
         </div>
       </div>
 
-      <!-- Section "Tout" -->
-      <div class="card">
-        <div class="section-title" id="toutHeader" style="cursor: pointer;">
-          <span>Tout :</span>
-          <span id="toutArrow">▲</span>
+      <!-- TABLEAU DE SUIVI DES ACHATS / VENTES (STYLE EXCEL) -->
+      <div class="excel-table-container">
+        <div class="excel-table-header-title">
+          Suivi d’achat
         </div>
-        
-        <div id="toutBody" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
-          <div class="search-product-box">
-            <input type="text" id="searchProductInput" placeholder="🔍 Rechercher un article...">
-          </div>
-          
-          <div class="add-product-form">
-            <input type="text" id="newProdName" placeholder="Nom de l'article">
-            <input type="number" id="newProdPrice" step="0.5" placeholder="Prix (€)">
-            <input type="file" id="newProdImg" accept="image/*">
-            <button class="btn-add" id="btnAddProduct">+ Ajouter</button>
-          </div>
-
-          <div id="accordionProductsList"></div>
+        <div class="excel-filter-bar">
+          <input type="text" id="excelSearchInput" class="excel-filter-input" placeholder="Filtrer par nom d'article...">
+        </div>
+        <div class="excel-table-scroll">
+          <table class="excel-table">
+            <thead>
+              <tr>
+                <th>Nom de l’article</th>
+                <th style="text-align: center;">Nombre Commandes</th>
+                <th style="text-align: right;">Prix unitaire</th>
+                <th style="text-align: right;">Valeur totale</th>
+              </tr>
+            </thead>
+            <tbody id="excelTableBody">
+              <!-- Dynamique -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -792,7 +797,7 @@
     <div class="modal-card">
       <h3>Accès Sécurisé</h3>
       <p>Code secret :</p>
-      <input type="password" id="modalPasswordInput" class="modal-input" placeholder="****" readonly>
+      <input type="password" id="modalPasswordInput" class="modal-input" placeholder="****" readonly="">
       <div class="modal-error" id="modalError">Code incorrect.</div>
       
       <div class="numpad">
@@ -947,7 +952,8 @@
       { id: 19, name: "Gâteau", price: 1.00, active: true, image: "https://previews.123rf.com/images/inganielsen/inganielsen1204/inganielsen120400005/13211279-marble-cake-on-a-white-background.jpg" },
       { id: 16, name: "Perrier", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/perrier.png" },
       { id: 17, name: "Coca", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/coca.png" },
-      { id: 9, name: "Bière", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/biere.png" },
+      { id: 9, name: "Bière Normale", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/biere.png" },
+      { id: 902, name: "Bière 0%", price: 2.00, active: true, image: "https://cerclestvincent.neocities.org/biere.png" },
       { id: 8, name: "Apéro", price: 1.50, active: true, image: "https://cerclestvincent.neocities.org/apero.png" },
       { id: 13, name: "Eau", price: 0.50, active: true, image: "https://cerclestvincent.neocities.org/eau.png" },
       { id: 20, name: "Café", price: 1.00, active: true, image: "https://cerclestvincent.neocities.org/cafe.png" },
@@ -985,16 +991,6 @@
     const btnPrintAll = document.getElementById("btnPrintAll");
     const btnResetDay = document.getElementById("btnResetDay");
 
-    const accordionProductsList = document.getElementById("accordionProductsList");
-    const btnAddProduct = document.getElementById("btnAddProduct");
-    const newProdName = document.getElementById("newProdName");
-    const newProdPrice = document.getElementById("newProdPrice");
-    const newProdImg = document.getElementById("newProdImg");
-    const searchProductInput = document.getElementById("searchProductInput");
-    const toutHeader = document.getElementById("toutHeader");
-    const toutBody = document.getElementById("toutBody");
-    const toutArrow = document.getElementById("toutArrow");
-
     const passwordModal = document.getElementById("passwordModal");
     const modalPasswordInput = document.getElementById("modalPasswordInput");
     const modalError = document.getElementById("modalError");
@@ -1022,6 +1018,8 @@
 
     const archiveModal = document.getElementById("archiveModal");
     const btnCloseArchive = document.getElementById("btnCloseArchive");
+    const excelSearchInput = document.getElementById("excelSearchInput");
+    const excelTableBody = document.getElementById("excelTableBody");
 
     function showAlert(msg) {
       alertModalMessage.textContent = msg;
@@ -1090,7 +1088,6 @@
       }
     }
 
-    // Génération et envoi automatique du PDF à minuit avec un nom simple (ex: recap_mardi_8_aout_2026.pdf)
     async function generateAndUploadPdfForDay(dayData) {
       const container = document.createElement("div");
       container.style.padding = "25px";
@@ -1133,7 +1130,6 @@
       try {
         const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
         
-        // Nom simple et propre : recap_mardi_8_aout_2026.pdf
         const safeDate = dayData.date
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
@@ -1146,7 +1142,6 @@
           contentType: 'application/pdf',
           upsert: true
         });
-        console.log("PDF automatique envoyé à minuit :", fileName);
       } catch (err) {
         console.error("Erreur lors de l'envoi automatique du PDF à minuit :", err.message);
       }
@@ -1155,24 +1150,11 @@
     function renderAll() {
       renderActiveProducts();
       renderCart();
-      renderManagementList();
       renderPdfDaysButtons();
+      renderExcelTable();
     }
 
     function setupEventListeners() {
-      toutHeader.addEventListener("click", () => {
-        playSound('click');
-        if (toutBody.style.display === "none") {
-          toutBody.style.display = "flex";
-          toutArrow.textContent = "▼";
-        } else {
-          toutBody.style.display = "none";
-          toutArrow.textContent = "▲";
-        }
-      });
-
-      searchProductInput.addEventListener("input", renderManagementList);
-
       btnToggleView.addEventListener("click", () => {
         playSound('click');
         if (!isSecuredView) {
@@ -1185,6 +1167,10 @@
           mainView.classList.add("active");
           btnToggleView.textContent = "🏠";
         }
+      });
+
+      excelSearchInput.addEventListener("input", () => {
+        renderExcelTable(excelSearchInput.value);
       });
 
       document.querySelectorAll(".btn-num[data-val]").forEach(btn => {
@@ -1302,9 +1288,9 @@
         currentCart = [];
         renderCart();
         renderPdfDaysButtons();
+        renderExcelTable();
       });
 
-      btnAddProduct.addEventListener("click", addNewProduct);
       btnResetDay.addEventListener("click", resetDay);
       
       btnAllRecaps.addEventListener("click", () => { 
@@ -1326,6 +1312,7 @@
         securedView.classList.add("active");
         btnToggleView.textContent = "🡠";
         renderPdfDaysButtons();
+        renderExcelTable();
       } else {
         modalError.style.visibility = "visible";
         modalPasswordInput.value = "";
@@ -1338,7 +1325,7 @@
       if (existing) {
         existing.qty += 1;
       } else {
-        currentCart.push({ id: name === "Bière Normale" ? 901 : 902, name, price, qty: 1 });
+        currentCart.push({ id: name === "Bière Normale" ? 9 : 902, name, price, qty: 1 });
       }
       renderCart();
     }
@@ -1407,6 +1394,46 @@
       cartTotal.textContent = total.toFixed(2);
     }
 
+    function renderExcelTable(filterText = "") {
+      excelTableBody.innerHTML = "";
+
+      // Agrégation des quantités commandées par article à partir de l'historique global
+      const statsMap = {};
+      products.forEach(p => {
+        statsMap[p.name] = { name: p.name, price: p.price, qty: 0, total: 0 };
+      });
+
+      history.forEach(ticket => {
+        ticket.items.forEach(item => {
+          if (!statsMap[item.name]) {
+            statsMap[item.name] = { name: item.name, price: item.price, qty: 0, total: 0 };
+          }
+          statsMap[item.name].qty += item.qty;
+          statsMap[item.name].total += item.price * item.qty;
+        });
+      });
+
+      const rowsData = Object.values(statsMap);
+      // Afficher uniquement les articles ayant plus de 0 commande
+      const filtered = rowsData.filter(r => r.qty > 0 && r.name.toLowerCase().includes(filterText.toLowerCase()));
+
+      if (filtered.length === 0) {
+        excelTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #777; padding: 20px;">Aucun article trouvé</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${row.name}</strong></td>
+          <td style="text-align: center;">${row.qty}</td>
+          <td style="text-align: right;">${row.price.toFixed(2)} €</td>
+          <td style="text-align: right; font-weight: bold; color: #008b8b;">${row.total.toFixed(2)} €</td>
+        `;
+        excelTableBody.appendChild(tr);
+      });
+    }
+
     function removeOrderItem(ticketId, itemIdx) {
       const ticket = history.find(t => t.id === ticketId);
       if (!ticket) return;
@@ -1425,6 +1452,7 @@
       saveData();
       showTodayOrders();
       renderPdfDaysButtons();
+      renderExcelTable();
     }
 
     function recalculateDayTotal() {
@@ -1443,6 +1471,7 @@
         saveData();
         showTodayOrders();
         renderPdfDaysButtons();
+        renderExcelTable();
       });
     }
 
@@ -1467,8 +1496,8 @@
       if (days.length === 0) {
         const defaultBtn = document.createElement("button");
         defaultBtn.className = "btn-sec-action btn-darkblue";
-        defaultBtn.style.marginLeft = "20px";
-        defaultBtn.style.width = "calc(100% - 20px)";
+        defaultBtn.style.marginLeft = "10px";
+        defaultBtn.style.width = "calc(100% - 10px)";
         defaultBtn.textContent = "• PDF - Aucun jour";
         defaultBtn.onclick = () => { playSound('click'); showAlert("Aucune donnée enregistrée."); };
         pdfDaysContainer.appendChild(defaultBtn);
@@ -1478,8 +1507,8 @@
       days.forEach(dayData => {
         const btn = document.createElement("button");
         btn.className = "btn-sec-action btn-darkblue";
-        btn.style.marginLeft = "20px";
-        btn.style.width = "calc(100% - 20px)";
+        btn.style.marginLeft = "10px";
+        btn.style.width = "calc(100% - 10px)";
         btn.textContent = `• PDF - ${dayData.date}`;
         btn.onclick = () => { playSound('click'); exportPdfDay(dayData); };
         pdfDaysContainer.appendChild(btn);
@@ -1627,7 +1656,6 @@
       mainPane.innerHTML = `<div class="archive-empty-state">Cliquez sur un dossier dans le panneau de gauche pour consulter les rapports PDF.</div>`;
     }
 
-    // Export manuel d'un PDF avec un nom simple (ex: recap_mardi_8_aout_2026.pdf)
     async function exportPdfDay(dayData) {
       const container = document.createElement("div");
       container.style.padding = "25px";
@@ -1673,7 +1701,6 @@
         
         const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
         
-        // Nettoyage et formatage simple du nom (ex: recap_mardi_8_aout_2026.pdf)
         const safeDate = dayData.date
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
@@ -1703,100 +1730,7 @@
 
     function printRecap() {
       if (history.length === 0) return showAlert("Aucune vente à imprimer.");
-      
-      const printContainer = document.getElementById("printArea");
-      let html = `<h2>Bilan Global Caisse</h2><p>Chiffre d'affaires : <strong>${dayTotal.toFixed(2)} €</strong> (${basketsCount} ventes)</p><hr>`;
-
-      const days = getHistoryByDay();
-      days.forEach(dayData => {
-        html += `<h3>${dayData.date} - Total : ${dayData.total.toFixed(2)} €</h3>`;
-        const itemCounts = {};
-        dayData.baskets.forEach(b => {
-          b.items.forEach(i => {
-            if (!itemCounts[i.name]) itemCounts[i.name] = { qty: 0, total: 0 };
-            itemCounts[i.name].qty += i.qty;
-            itemCounts[i.name].total += i.price * i.qty;
-          });
-        });
-        for (const [name, data] of Object.entries(itemCounts)) {
-          html += `<p style="margin-left: 15px;">${name} x${data.qty} : ${data.total.toFixed(2)} €</p>`;
-        }
-      });
-
-      printContainer.innerHTML = html;
       window.print();
-    }
-
-    function renderManagementList() {
-      accordionProductsList.innerHTML = "";
-      const query = searchProductInput.value.toLowerCase().trim();
-      const filteredProducts = products.filter(product => product.name.toLowerCase().includes(query));
-
-      if (filteredProducts.length === 0) {
-        accordionProductsList.innerHTML = `<div style="text-align:center; color:#999; padding: 15px;">Aucun article trouvé</div>`;
-        return;
-      }
-
-      filteredProducts.forEach(product => {
-        const item = document.createElement("div");
-        item.className = "product-select-item";
-        item.innerHTML = `
-          <label>
-            <input type="checkbox" ${product.active ? "checked" : ""}>
-            ${product.name}
-          </label>
-          <div class="product-select-right">
-            <span>${product.price.toFixed(2)}€</span>
-            <button class="btn-remove-item">🗑</button>
-          </div>
-        `;
-        item.querySelector("input[type='checkbox']").addEventListener("change", (e) => {
-          playSound('click');
-          product.active = e.target.checked;
-          saveData();
-          renderActiveProducts();
-        });
-        item.querySelector(".btn-remove-item").addEventListener("click", () => {
-          showConfirm("Supprimer cet article ?", () => {
-            playSound('error');
-            triggerFlash('red');
-            products = products.filter(p => p.id !== product.id);
-            saveData();
-            renderAll();
-          });
-        });
-        accordionProductsList.appendChild(item);
-      });
-    }
-
-    function addNewProduct() {
-      const name = newProdName.value.trim();
-      const price = parseFloat(newProdPrice.value);
-      const file = newProdImg.files[0];
-
-      if (!name || isNaN(price) || price <= 0) {
-        showAlert("Nom et prix valides requis.");
-        return;
-      }
-
-      playSound('click');
-
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => saveNewProductObj(name, price, e.target.result);
-        reader.readAsDataURL(file);
-      } else {
-        saveNewProductObj(name, price, null);
-      }
-    }
-
-    function saveNewProductObj(name, price, imgData) {
-      products.push({ id: Date.now(), name, price, active: true, image: imgData });
-      newProdName.value = "";
-      newProdPrice.value = "";
-      newProdImg.value = "";
-      saveData();
-      renderAll();
     }
 
     function resetDay() {
@@ -1817,5 +1751,5 @@
 
     window.onload = init;
   </script>
-</body>
-</html>
+
+</body></html>
